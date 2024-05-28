@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GLB to PNG Exporter</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            width: 80%;
+            height: 80%;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".glb" />
+    <canvas id="renderCanvas"></canvas>
+    <div>
+        <label for="resolution">Resolution: </label>
+        <input type="number" id="resolution" value="1024" min="256" max="4096" />
+        <button onclick="captureScreenshot()">Capture Screenshot</button>
+    </div>
+    <script>
+        let engine, scene, camera, model;
+
+        const canvas = document.getElementById('renderCanvas');
+        engine = new BABYLON.Engine(canvas, true);
+        scene = new BABYLON.Scene(engine);
+
+        camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2, 2, BABYLON.Vector3.Zero(), scene);
+        camera.attachControl(canvas, true);
+
+        const light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), scene);
+
+        engine.runRenderLoop(() => {
+            if (scene) {
+                scene.render();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            engine.resize();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                if (model) {
+                    model.dispose();
+                }
+                model = await BABYLON.SceneLoader.ImportMeshAsync('', '', fileURL, scene);
+                camera.target = model.meshes[0];
+            }
+        });
+
+        function captureScreenshot() {
+            const resolution = parseInt(document.getElementById('resolution').value);
+            BABYLON.Tools.CreateScreenshotUsingRenderTarget(engine, camera, { width: resolution, height: resolution }, (data) => {
+                const link = document.createElement('a');
+                link.href = data;
+                link.download = 'screenshot.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, 'image/png', true);
+        }
+    </script>
+</body>
+</html>
