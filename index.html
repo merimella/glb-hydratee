@@ -83,7 +83,7 @@
         camera.attachControl(canvas, true);
     
         // Load HDR environment texture for realistic lighting
-        const hdrTexture = new BABYLON.HDRCubeTexture("/studio_small_09_4k.hdr", scene, 512);
+        const hdrTexture = new BABYLON.HDRCubeTexture("assets/studio_small_09_4k.hdr", scene, 512);
         scene.environmentTexture = hdrTexture;
     
         // Standard studio lights
