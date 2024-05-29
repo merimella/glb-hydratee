@@ -3,6 +3,7 @@
 <head>
     <title>GLB to PNG Exporter</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.typekit.net/ior1ura.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.js"></script>
@@ -46,10 +47,10 @@
                         <div class="col-6">
                             <div class="resol">
                             <div>
-                                <input type="number" id="resolution" value="300" min="72" max="600" class="form-control mb-3" />
+                                <input type="number" id="resolution" value="2000" min="300" max="600" class="form-control mb-3" />
                                
                             </div>
-                            <button onclick="captureScreenshot()" class="btn btn-success w-100">Capture Screenshot</button>
+                            <button onclick="captureScreenshot()" class="btn btn-success w-100">Salva PNG</button>
                         </div>
                     </div>
                 </div>
@@ -64,7 +65,9 @@
         ?
     </div>
     <div class="modal-instructions" id="modalInstructions">
-        <p>Inserisci le istruzioni qui.</p>
+        <p>Ruota il prodotto manualmente o serviti degli input (x,y e z). <br> Effettua lo zoom con la rotellina del mouse o con l'input +/ <br>
+            Imposta una risoluzione minima di 2000 e salva l'immagine sul tuo dispositivo.
+        </p>
     </div>
 
     <script>
@@ -79,15 +82,24 @@
         camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2, 1.1, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
     
+        // Load HDR environment texture for realistic lighting
+        const hdrTexture = new BABYLON.HDRCubeTexture("/studio_small_09_4k.hdr", scene, 512);
+        scene.environmentTexture = hdrTexture;
+    
         // Standard studio lights
         const light1 = new BABYLON.DirectionalLight("light1", new BABYLON.Vector3(0, -1, 1), scene);
         light1.position = new BABYLON.Vector3(0, 5, -5);
-        const light2 = new BABYLON.DirectionalLight("light2", new BABYLON.Vector3(1, -1, 0), scene);
-        light2.position = new BABYLON.Vector3(-5, 5, 0);
-        const light3 = new BABYLON.DirectionalLight("light3", new BABYLON.Vector3(-1, -1, 0), scene);
-        light3.position = new BABYLON.Vector3(5, 5, 0);
-        const light4 = new BABYLON.HemisphericLight("light4", new BABYLON.Vector3(0, 1, 0), scene);
-        light4.intensity = 0.5;
+        light1.intensity = 2.0;
+    
+        const light2 = new BABYLON.HemisphericLight("light2", new BABYLON.Vector3(0, 1, 0), scene);
+        light2.intensity = 0.6;
+    
+        // Configure the environment
+        const environment = scene.createDefaultEnvironment({
+            environmentTexture: hdrTexture,
+            createSkybox: false, // Disable skybox to keep the background transparent
+            skyboxSize: 150,
+        });
     
         engine.runRenderLoop(() => {
             if (scene) {
@@ -199,7 +211,7 @@
                 link.click();
                 document.body.removeChild(link);
                 engine.setSize(canvas.width, canvas.height); // Reset the engine size
-            }, 'image/png', true);
+            }, 'image/png', true, undefined, true);
         }
     
         document.getElementById('questionIcon').addEventListener('mouseenter', () => {
@@ -210,6 +222,9 @@
             document.getElementById('modalInstructions').classList.remove('show');
         });
     </script>
+    
+    
+    
     
 </body>
 </html>
