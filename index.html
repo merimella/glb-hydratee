@@ -69,16 +69,16 @@
 
     <script>
         let engine, scene, camera, model, transformNode, gizmoManager;
-
+    
         const canvas = document.getElementById('renderCanvas');
         engine = new BABYLON.Engine(canvas, true);
         scene = new BABYLON.Scene(engine);
-
+    
         scene.clearColor = new BABYLON.Color4(0, 0, 0, 0); // Set background to transparent
-
+    
         camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2, 1.1, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
-
+    
         // Standard studio lights
         const light1 = new BABYLON.DirectionalLight("light1", new BABYLON.Vector3(0, -1, 1), scene);
         light1.position = new BABYLON.Vector3(0, 5, -5);
@@ -88,47 +88,62 @@
         light3.position = new BABYLON.Vector3(5, 5, 0);
         const light4 = new BABYLON.HemisphericLight("light4", new BABYLON.Vector3(0, 1, 0), scene);
         light4.intensity = 0.5;
-
+    
         engine.runRenderLoop(() => {
             if (scene) {
                 scene.render();
             }
         });
-
+    
         window.addEventListener('resize', () => {
             engine.resize();
         });
-
+    
         document.getElementById('fileInput').addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
                 const fileURL = URL.createObjectURL(file);
                 console.log('File URL:', fileURL);
+    
+                // Rimuovi il modello precedente se esiste
                 if (model) {
-                    model.meshes.forEach(mesh => mesh.dispose());
+                    if (model.dispose) {
+                        model.dispose(); // Dispose model if it has a dispose method
+                    }
+                    if (model.meshes) {
+                        model.meshes.forEach(mesh => mesh.dispose()); // Dispose all meshes
+                    }
                 }
+                if (transformNode) {
+                    transformNode.dispose(); // Dispose the transform node
+                }
+                if (gizmoManager) {
+                    gizmoManager.dispose(); // Dispose the gizmo manager
+                }
+    
                 try {
+                    // Carica il nuovo modello
                     const result = await BABYLON.SceneLoader.ImportMeshAsync('', fileURL, '', scene, null, '.glb');
                     model = result.meshes[0];
                     console.log('Model loaded:', model);
-
+    
                     if (model) {
                         camera.target = model;
-                        
-                        // Initialize the transform node and attach the model to it
-                        transformNode = new BABYLON.TransformNode("root");
+    
+                        // Inizializza il nodo di trasformazione e collega il modello ad esso
+                        transformNode = new BABYLON.TransformNode("root", scene);
                         model.parent = transformNode;
-
-                        // Initialize gizmo manager and attach to transform node
+    
+                        // Inizializza il gizmo manager e collega al nodo di trasformazione
                         gizmoManager = new BABYLON.GizmoManager(scene);
                         gizmoManager.rotationGizmoEnabled = true;
                         gizmoManager.usePointerToAttachGizmos = true;
                         gizmoManager.attachToMesh(transformNode);
-
-                        // Update model rotation based on input
+    
+                        // Aggiorna la rotazione del modello in base all'input
                         updateModelTransform();
-
-                        // Update input fields based on gizmo movement
+    
+                        // Aggiorna i campi di input in base al movimento del gizmo
                         gizmoManager.gizmos.rotationGizmo.onDragEndObservable.add(() => {
                             document.getElementById('rotX').value = BABYLON.Tools.ToDegrees(transformNode.rotation.x).toFixed(1);
                             document.getElementById('rotY').value = BABYLON.Tools.ToDegrees(transformNode.rotation.y).toFixed(1);
@@ -140,37 +155,37 @@
                 }
             }
         });
-
+    
         function updateModelTransform() {
             if (transformNode) {
                 const rotX = BABYLON.Tools.ToRadians(parseFloat(document.getElementById('rotX').value));
                 const rotY = BABYLON.Tools.ToRadians(parseFloat(document.getElementById('rotY').value));
                 const rotZ = BABYLON.Tools.ToRadians(parseFloat(document.getElementById('rotZ').value));
-
+    
                 console.log(`Updating model rotation: rotX=${rotX}, rotY=${rotY}, rotZ=${rotZ}`);
-
+    
                 transformNode.rotation.x = rotX;
                 transformNode.rotation.y = rotY;
                 transformNode.rotation.z = rotZ;
             }
         }
-
+    
         document.querySelectorAll('.axis-controls input[type=number]').forEach(input => {
             input.addEventListener('change', () => {
                 console.log(`Input changed: ${input.id} = ${input.value}`);
                 updateModelTransform();
             });
         });
-
+    
         document.getElementById('zoom').addEventListener('input', () => {
             const zoomValue = parseFloat(document.getElementById('zoom').value);
             camera.radius = 2 / zoomValue;
         });
-
+    
         camera.onViewMatrixChangedObservable.add(() => {
             document.getElementById('zoom').value = (2 / camera.radius).toFixed(1);
         });
-
+    
         function captureScreenshot() {
             const dpi = parseInt(document.getElementById('resolution').value);
             const inches = 4; // For a 4x4 inch image
@@ -186,14 +201,15 @@
                 engine.setSize(canvas.width, canvas.height); // Reset the engine size
             }, 'image/png', true);
         }
-
+    
         document.getElementById('questionIcon').addEventListener('mouseenter', () => {
             document.getElementById('modalInstructions').classList.add('show');
         });
-
+    
         document.getElementById('questionIcon').addEventListener('mouseleave', () => {
             document.getElementById('modalInstructions').classList.remove('show');
         });
     </script>
+    
 </body>
 </html>
